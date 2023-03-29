@@ -1,17 +1,14 @@
 import { Injectable, HttpStatus, HttpException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { PaginateQuery } from "nestjs-paginate";
-import { CommonFilterService } from "src/shared/service/common-filter.service";
 import { Repository } from "typeorm";
-
+import { AssetsStatusrevEntity } from "../infrastructure/entities/assets-statusrev.entity";
 
 
 @Injectable()
 export class ApplicationService {
 
     constructor(
-        // @InjectRepository(VGoodsTrackerTmpEntity) private entity: Repository<VGoodsTrackerTmpEntity>,
-        private commonFilterService: CommonFilterService
+        @InjectRepository(AssetsStatusrevEntity) private entity: Repository<AssetsStatusrevEntity>,
     ) { }
     /**
      * PROCEDURE "SERA"."SP_INSERTA_MOTIVOSREV"'
@@ -24,9 +21,9 @@ export class ApplicationService {
      * @memberof ApplicationService
      */
     async insertMotivosRev(goodInNumber: number, eventInId: number, reasonsIn: string, reasonsInNumber: string, actionIn: string) {
-        let V_QUERY: string,
-            V_QUERY2: string,
-            V_QUERY3: string,
+        let V_QUERY: any,
+            V_QUERY2: any,
+            V_QUERY3: any,
             DIREC: string,
             RESPONSABLE: string = 'RESPONSABLE_',
             CONTADOR: number,
@@ -55,24 +52,24 @@ export class ApplicationService {
                 if (NO_BIEN_RE == null) {
                     const qs = `INSERT INTO SERA.BIENES_ESTATUSREV
                                 (NO_BIEN, TIPO_BIEN, ID_EVENTO, ESTATUS_INICIAL, ID_EVENTO)
-                                VALUES (${goodInNumber}, ${DIREC}, ${eventInId}, 'AVA', ${reasonsIn})`;
+                                VALUES (${goodInNumber}, '${DIREC}', '${eventInId}', 'AVA', '${reasonsIn}')`;
 
                     // exceute query
                     await this.entity.query(qs);
                 }
 
-                V_QUERY2 = await this.entity.query(`SELECT COUNT( DISTINCT(UPPER(AREA_RESPONSABLE))) FROM SERA.CAT_MOTIVOSREV WHERE ID_MOTIVO IN ('${reasonsInNumber}')`);
+                V_QUERY2 = await this.entity.query(`SELECT COUNT( DISTINCT(UPPER(AREA_RESPONSABLE))) AS C FROM SERA.CAT_MOTIVOSREV WHERE ID_MOTIVO IN ('${reasonsInNumber}')`);
 
                 // OPEN SALIDA FOR V_QUERY2 ;
-                for (let index = 0; index < array.length; index++) {
+                for (let index = 0; index < V_QUERY2[0]?.C; index++) {
                     // SALIDA;
-                    MOT_COUNT = SALIDA;
+                    MOT_COUNT++;
                 }
 
                 V_QUERY = await this.entity.query(`SELECT DISTINCT(UPPER(AREA_RESPONSABLE)) AREA FROM SERA.CAT_MOTIVOSREV WHERE ID_MOTIVO IN ('${reasonsInNumber}') ORDER BY AREA ASC`);
 
                 // OPEN SALIDA FOR V_QUERY;
-                for (let index = 0; index < array.length; index++) {
+                for (let index = 0; index < V_QUERY[0]?.AREA; index++) {
                     // SALIDA;
                     CONTADOR++;
 
@@ -105,23 +102,19 @@ export class ApplicationService {
                     await this.paSeparaMotivos(goodInNumber, eventInId);
                 }
             } else if (actionIn == "D") {
-                await this.entity.query(`DELETE FROM SERA.BIENES_ESTATUSREV
-                                        WHERE NO_BIEN = ${goodInNumber}
-                                        AND TIPO_BIEN= ${DIREC}
-                                        AND ESTATUS_INICIAL = 'AVA'
-                                        AND ID_EVENTO = ${eventInId}`);
+                await this.entity.query(`DELETE FROM SERA.BIENES_ESTATUSREV WHERE NO_BIEN = ${goodInNumber}
+                                    AND TIPO_BIEN= ${DIREC}
+                                    AND ESTATUS_INICIAL = 'AVA'
+                                    AND ID_EVENTO = ${eventInId}`);
 
-                await this.entity.query(`DELETE FROM SERA.RESPONSABLES_ATENCION
-                                        WHERE NO_BIEN = ${goodInNumber}
-                                        AND ESTATUS_INICIAL ='AVA'
-                                        AND ID_EVENTO = ${eventInId}`);
+                await this.entity.query(`DELETE FROM SERA.RESPONSABLES_ATENCION WHERE NO_BIEN = ${goodInNumber}
+                                    AND ESTATUS_INICIAL ='AVA'
+                                    AND ID_EVENTO = ${eventInId}`);
             }
-
             return { message: RESPON };
-
         } catch (e) {
             console.log(e)
-            throw new HttpException(e, HttpStatus.INTERNAL_SERVER_ERROR);
+            return { message: e };
         }
     }
 
