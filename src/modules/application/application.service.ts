@@ -21,57 +21,57 @@ export class ApplicationService {
      * @memberof ApplicationService
      */
     async insertMotivosRev(goodInNumber: number, eventInId: number, reasonsIn: string, reasonsInNumber: string, actionIn: string) {
-        let V_QUERY: any,
-            V_QUERY2: any,
-            V_QUERY3: any,
-            DIREC: string,
-            RESPONSABLE: string = 'RESPONSABLE_',
-            CONTADOR: number,
-            SALIDA: any,
-            AREA_RESP: string,
-            RESPON: string,
-            EXISTE: string,
-            COLUMNAS: string,
-            VALORES: string,
-            MOT_COUNT: number,
-            ESTATUS_INI: string = 'AVA',
-            NO_BIEN_RE: number;
+        let vQuery: any, //V_QUERY
+            vQuery2: any, //V_QUERY2
+            vQuery3: any, //V_QUERY3
+            direc: string, //DIREC
+            responsable: string = 'RESPONSABLE_', //RESPONSABLE
+            contador: number, //CONTADOR
+            salida: any, //SALIDA
+            areaResp: string, //AREA_RESP
+            respon: string, //RESPON
+            existe: string, //EXISTE
+            columnas: string, //COLUMNAS
+            valores: string, //VALORES
+            motCount: number, //MOT_COUNT
+            estatusIIni: string = 'AVA', //ESTATUS_INI
+            noBienRe: number; //NO_BIEN_RE
 
         try {
             if (actionIn == "I") {
 
                 const qs = `SELECT NO_BIEN FROM SERA.BIENES_ESTATUSREV
                             WHERE NO_BIEN = ${goodInNumber}
-                            AND TIPO_BIEN = ${DIREC}
+                            AND TIPO_BIEN = ${direc}
                             AND ESTATUS_INICIAL = 'AVA'
                             AND ID_EVENTO = ${eventInId}`;
 
                 // excute query
-                NO_BIEN_RE = await this.entity.query(qs);
+                noBienRe = await this.entity.query(qs);
 
-                if (NO_BIEN_RE == null) {
+                if (noBienRe == null) {
                     const qs = `INSERT INTO SERA.BIENES_ESTATUSREV
                                 (NO_BIEN, TIPO_BIEN, ID_EVENTO, ESTATUS_INICIAL, ID_EVENTO)
-                                VALUES (${goodInNumber}, '${DIREC}', '${eventInId}', 'AVA', '${reasonsIn}')`;
+                                VALUES (${goodInNumber}, '${direc}', '${eventInId}', 'AVA', '${reasonsIn}')`;
 
                     // exceute query
                     await this.entity.query(qs);
                 }
 
-                V_QUERY2 = await this.entity.query(`SELECT COUNT( DISTINCT(UPPER(AREA_RESPONSABLE))) AS C FROM SERA.CAT_MOTIVOSREV WHERE ID_MOTIVO IN ('${reasonsInNumber}')`);
+                vQuery2 = await this.entity.query(`SELECT COUNT( DISTINCT(UPPER(AREA_RESPONSABLE))) AS C FROM SERA.CAT_MOTIVOSREV WHERE ID_MOTIVO IN ('${reasonsInNumber}')`);
 
-                // OPEN SALIDA FOR V_QUERY2 ;
-                for (let index = 0; index < V_QUERY2[0]?.C; index++) {
-                    // SALIDA;
-                    MOT_COUNT++;
+                // OPEN salida FOR vQuery2 ;
+                for (let index = 0; index < vQuery2[0]?.C; index++) {
+                    // salida;
+                    motCount++;
                 }
 
-                V_QUERY = await this.entity.query(`SELECT DISTINCT(UPPER(AREA_RESPONSABLE)) AREA FROM SERA.CAT_MOTIVOSREV WHERE ID_MOTIVO IN ('${reasonsInNumber}') ORDER BY AREA ASC`);
+                vQuery = await this.entity.query(`SELECT DISTINCT(UPPER(AREA_RESPONSABLE)) AREA FROM SERA.CAT_MOTIVOSREV WHERE ID_MOTIVO IN ('${reasonsInNumber}') ORDER BY AREA ASC`);
 
-                // OPEN SALIDA FOR V_QUERY;
-                for (let index = 0; index < V_QUERY[0]?.AREA; index++) {
-                    // SALIDA;
-                    CONTADOR++;
+                // OPEN salida FOR vQuery;
+                for (let index = 0; index < vQuery[0]?.AREA; index++) {
+                    // salida;
+                    contador++;
 
                     const qs = `SELECT NO_BIEN
                                 FROM SERA.RESPONSABLES_ATENCION
@@ -79,31 +79,31 @@ export class ApplicationService {
                                 AND ESTATUS_INICIAL = 'AVA' `;
 
                     // excute query
-                    EXISTE = await this.entity.query(qs);
+                    existe = await this.entity.query(qs);
 
-                    if (EXISTE == null) {
-                        if (CONTADOR <= MOT_COUNT) {
-                            COLUMNAS = COLUMNAS + ", ";
-                            VALORES = VALORES + ", ";
+                    if (existe == null) {
+                        if (contador <= motCount) {
+                            columnas = columnas + ", ";
+                            valores = valores + ", ";
                         }
-                        COLUMNAS = COLUMNAS + " " + RESPONSABLE + " " + CONTADOR;
-                        VALORES = VALORES + " " + AREA_RESP;
+                        columnas = columnas + " " + responsable + " " + contador;
+                        valores = valores + " " + areaResp;
                     }
                 }
 
-                if (COLUMNAS != null && VALORES != null) {
-                    V_QUERY3 = `INSERT INTO SERA.RESPONSABLES_ATENCION (NO_BIEN,ESTATUS_INICIAL, ID_EVENTO'${COLUMNAS}')
-                    VALUES( '${goodInNumber}','${ESTATUS_INI}','${eventInId}${VALORES}')`;
+                if (columnas != null && valores != null) {
+                    vQuery3 = `INSERT INTO SERA.RESPONSABLES_ATENCION (NO_BIEN,ESTATUS_INICIAL, ID_EVENTO'${columnas}') 
+                    VALUES( '${goodInNumber}','${estatusIIni}','${eventInId}${valores}')`;
 
                     // excute query
-                    await this.entity.query(V_QUERY3);
+                    await this.entity.query(vQuery3);
 
                     // PA_SEPARA_MOTIVOS
                     await this.paSeparaMotivos(goodInNumber, eventInId);
                 }
             } else if (actionIn == "D") {
                 await this.entity.query(`DELETE FROM SERA.BIENES_ESTATUSREV WHERE NO_BIEN = ${goodInNumber}
-                                    AND TIPO_BIEN= ${DIREC}
+                                    AND TIPO_BIEN= ${direc}
                                     AND ESTATUS_INICIAL = 'AVA'
                                     AND ID_EVENTO = ${eventInId}`);
 
@@ -111,10 +111,15 @@ export class ApplicationService {
                                     AND ESTATUS_INICIAL ='AVA'
                                     AND ID_EVENTO = ${eventInId}`);
             }
-            return { message: RESPON };
+            return {
+                statusCode: HttpStatus.OK,
+                message: 'OK'
+            };
         } catch (e) {
-            console.log(e)
-            return { message: e };
+            return {
+                statusCode: 500,
+                message: e
+            };
         }
     }
 
