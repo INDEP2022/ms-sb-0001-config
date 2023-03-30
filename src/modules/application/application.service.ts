@@ -8,7 +8,8 @@ import { AssetsStatusrevEntity } from "../infrastructure/entities/assets-statusr
 export class ApplicationService {
 
     constructor(
-        @InjectRepository(AssetsStatusrevEntity) private entity: Repository<AssetsStatusrevEntity>,
+        @InjectRepository(AssetsStatusrevEntity) private Repository: Repository<AssetsStatusrevEntity>,
+
     ) { }
     /**
      * PROCEDURE "SERA"."SP_INSERTA_MOTIVOSREV"'
@@ -19,8 +20,9 @@ export class ApplicationService {
      * @param {string} reasonsInNumber = NO_MOTIVOS_IN
      * @param {string} actionIn = ACCION_IN
      * @memberof ApplicationService
+     * @returns {Promise<any>}
      */
-    async insertMotivosRev(goodInNumber: number, eventInId: number, reasonsIn: string, reasonsInNumber: string, actionIn: string) {
+    async insertMotivosRev(goodInNumber: number, eventInId: number, reasonsIn: string, reasonsInNumber: string, actionIn: string): Promise<any> {
         let vQuery: any, //V_QUERY
             vQuery2: any, //V_QUERY2
             vQuery3: any, //V_QUERY3
@@ -33,53 +35,76 @@ export class ApplicationService {
             existe: string, //EXISTE
             columnas: string, //COLUMNAS
             valores: string, //VALORES
-            motCount: number, //MOT_COUNT
-            estatusIIni: string = 'AVA', //ESTATUS_INI
+            motCount: number = 1, //MOT_COUNT
+            estatusIni: string = 'AVA', //ESTATUS_INI
             noBienRe: number; //NO_BIEN_RE
 
         try {
+            const qb = this.Repository.createQueryBuilder('comer_eventos')
+                .select('comer_eventos.direccion')
+                .where('comer_eventos.id_evento = :id_evento', { id_evento: eventInId });
+
+            direc = await qb.getRawOne();
+
             if (actionIn == "I") {
 
-                const qs = `SELECT NO_BIEN FROM SERA.BIENES_ESTATUSREV
-                            WHERE NO_BIEN = ${goodInNumber}
-                            AND TIPO_BIEN = ${direc}
-                            AND ESTATUS_INICIAL = 'AVA'
-                            AND ID_EVENTO = ${eventInId}`;
+                const qbSelectNoBienRe = this.Repository.createQueryBuilder('sera.buenes_estatusrev')
+                    .select('sera.buenes_estatusrev.no_bien')
+                    .where('sera.buenes_estatusrev.no_bien = :no_bien', { no_bien: goodInNumber })
+                    .andWhere('sera.buenes_estatusrev.tipo_bien = :tipo_bien', { tipo_bien: direc })
+                    .andWhere('sera.buenes_estatusrev.estatus_inicial = :tipo_bien', { tipo_bien: direc })
+                    .andWhere('sera.buenes_estatusrev.estatus_inicial = :estatus_inicial', { estatus_inicial: estatusIni })
+                    .andWhere('sera.buenes_estatusrev.id_evento = :id_evento', { id_evento: eventInId });
 
                 // excute query
-                noBienRe = await this.entity.query(qs);
+                noBienRe = await qbSelectNoBienRe.getRawOne();
 
                 if (noBienRe == null) {
-                    const qs = `INSERT INTO SERA.BIENES_ESTATUSREV
-                                (NO_BIEN, TIPO_BIEN, ID_EVENTO, ESTATUS_INICIAL, ID_EVENTO)
-                                VALUES (${goodInNumber}, '${direc}', '${eventInId}', 'AVA', '${reasonsIn}')`;
+                    const qbInsertNoBienRe = this.Repository.createQueryBuilder('sera.buenes_estatusrev')
+                        .insert()
+                        .into('sera.buenes_estatusrev')
+                        .values([
+                            { no_bien: goodInNumber, tipo_bien: direc, id_evento: eventInId, estatus_inicial: estatusIni, motivos: reasonsIn }
+                        ]);
 
-                    // exceute query
-                    await this.entity.query(qs);
+                    // excute query
+                    await qbInsertNoBienRe.execute();
                 }
 
-                vQuery2 = await this.entity.query(`SELECT COUNT( DISTINCT(UPPER(AREA_RESPONSABLE))) AS C FROM SERA.CAT_MOTIVOSREV WHERE ID_MOTIVO IN ('${reasonsInNumber}')`);
+                const qbSelectvQuery2 = this.Repository.createQueryBuilder('sera.cat_motivosrev')
+                    .select('sera.cat_motivosrev.area_responsable')
+                    .where('sera.cat_motivosrev.id_motivo IN (:id_motivo)', { id_motivo: reasonsInNumber });
+
+                vQuery2 = await qbSelectvQuery2.getCount();
 
                 // OPEN salida FOR vQuery2 ;
-                for (let index = 0; index < vQuery2[0]?.C; index++) {
+                for (let index = 0; index < vQuery2; index++) {
                     // salida;
                     motCount++;
                 }
 
-                vQuery = await this.entity.query(`SELECT DISTINCT(UPPER(AREA_RESPONSABLE)) AREA FROM SERA.CAT_MOTIVOSREV WHERE ID_MOTIVO IN ('${reasonsInNumber}') ORDER BY AREA ASC`);
+                const qbSelectvQuery = this.Repository.createQueryBuilder('sera.cat_motivosrev')
+                    .select('sera.cat_motivosrev.area_responsable')
+                    .where('sera.cat_motivosrev.id_motivo IN (:id_motivo)', { id_motivo: reasonsInNumber })
+                    .orderBy('sera.cat_motivosrev.area_responsable', 'ASC');
+
+                vQuery = await qbSelectvQuery.execute();
+
+                let vQueryCount = await qbSelectvQuery.getCount();
 
                 // OPEN salida FOR vQuery;
-                for (let index = 0; index < vQuery[0]?.AREA; index++) {
+                for (let index = 0; index < vQueryCount; index++) {
                     // salida;
                     contador++;
 
-                    const qs = `SELECT NO_BIEN
-                                FROM SERA.RESPONSABLES_ATENCION
-                                WHERE NO_BIEN = ${goodInNumber}
-                                AND ESTATUS_INICIAL = 'AVA' `;
+                    const qsSelectExiste = this.Repository.createQueryBuilder('sera.responsables_atencion')
+                        .select('sera.responsables_atencion.no_bien')
+                        .where('sera.responsables_atencion.no_bien = :no_bien', { no_bien: goodInNumber })
+                        .andWhere('sera.responsables_atencion.estatus_inicial = :estatus_inicial', { estatus_inicial: estatusIni });
 
                     // excute query
-                    existe = await this.entity.query(qs);
+                    existe = await qsSelectExiste.getRawOne();
+
 
                     if (existe == null) {
                         if (contador <= motCount) {
@@ -92,24 +117,32 @@ export class ApplicationService {
                 }
 
                 if (columnas != null && valores != null) {
-                    vQuery3 = `INSERT INTO SERA.RESPONSABLES_ATENCION (NO_BIEN,ESTATUS_INICIAL, ID_EVENTO'${columnas}') 
-                    VALUES( '${goodInNumber}','${estatusIIni}','${eventInId}${valores}')`;
+                    vQuery3 = `INSERT INTO SERA.RESPONSABLES_ATENCION (NO_BIEN,ESTATUS_INICIAL, ID_EVENTO, '${columnas}')
+                    VALUES( '${goodInNumber}','${estatusIni}','${eventInId}', ${valores}')`;
 
                     // excute query
-                    await this.entity.query(vQuery3);
+                    await this.Repository.query(vQuery3);
 
                     // PA_SEPARA_MOTIVOS
                     await this.paSeparaMotivos(goodInNumber, eventInId);
                 }
             } else if (actionIn == "D") {
-                await this.entity.query(`DELETE FROM SERA.BIENES_ESTATUSREV WHERE NO_BIEN = ${goodInNumber}
-                                    AND TIPO_BIEN= ${direc}
-                                    AND ESTATUS_INICIAL = 'AVA'
-                                    AND ID_EVENTO = ${eventInId}`);
+                const qbDelete1 = this.Repository.createQueryBuilder('sera.buenes_estatusrev')
+                    .delete()
+                    .where('sera.buenes_estatusrev.no_bien = :no_bien', { no_bien: goodInNumber })
+                    .andWhere('sera.buenes_estatusrev.tipo_bien = :tipo_bien', { tipo_bien: direc })
+                    .andWhere('sera.buenes_estatusrev.estatus_inicial = :estatus_inicial', { estatus_inicial: estatusIni })
+                    .andWhere('sera.buenes_estatusrev.id_evento = :id_evento', { id_evento: eventInId });
 
-                await this.entity.query(`DELETE FROM SERA.RESPONSABLES_ATENCION WHERE NO_BIEN = ${goodInNumber}
-                                    AND ESTATUS_INICIAL ='AVA'
-                                    AND ID_EVENTO = ${eventInId}`);
+                await qbDelete1.execute();
+
+                const qbDelete2 = this.Repository.createQueryBuilder('sera.responsables_atencion')
+                    .delete()
+                    .where('sera.responsables_atencion.no_bien = :no_bien', { no_bien: goodInNumber })
+                    .andWhere('sera.responsables_atencion.estatus_inicial = :estatus_inicial', { estatus_inicial: estatusIni })
+                    .andWhere('sera.responsables_atencion.id_evento = :id_evento', { id_evento: eventInId });
+
+                await qbDelete2.execute();
             }
             return {
                 statusCode: HttpStatus.OK,
