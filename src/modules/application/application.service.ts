@@ -36,7 +36,6 @@ export class ApplicationService {
             direc: string, //DIREC
             responsable: string = 'RESPONSABLE_', //RESPONSABLE
             contador: number = 0, //CONTADOR
-            salida: any, //SALIDA
             areaResp: string, //AREA_RESP
             respon: string, //RESPON
             existe: boolean, //EXISTE
@@ -160,7 +159,7 @@ export class ApplicationService {
             };
         } catch (e) {
             return {
-                statusCode: 500,
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: e,
             };
         }
