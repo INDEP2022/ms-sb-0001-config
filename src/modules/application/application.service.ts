@@ -101,7 +101,6 @@ export class ApplicationService {
                 for (let index = 0; index < vQueryCount; index++) {
                     contador++;
                     areaResp = vQuery[index].area_responsable;
-                    respon = responsable + areaResp;
                     const qsSelectExiste = this.ResponsibleAttentionRepository.createQueryBuilder('sera.responsables_atencion')
                         .select('sera.responsables_atencion.no_bien')
                         .where('sera.responsables_atencion.no_bien = :no_bien', { no_bien: dto.goodInNumber })
@@ -124,10 +123,10 @@ export class ApplicationService {
                 if (columnas != null && valores != null) {
                     vQuery3 = `INSERT INTO SERA.RESPONSABLES_ATENCION (NO_BIEN, ID_EVENTO, ESTATUS_INICIAL${columnas})
                     VALUES( '${dto.goodInNumber}', '${dto.eventInId}', '${estatusIni}' ${valores}')`;
-
                     // excute query
                     await this.ResponsibleAttentionRepository.query(vQuery3)
 
+                    respon = "Ejecución de insert exitoso";
                     // PA_SEPARA_MOTIVOS
                     //TODO: descomentar este await cuando este listo paSeparaMotivos
                     //await this.paSeparaMotivos(dto.goodInNumber, dto.eventInId);
@@ -150,6 +149,7 @@ export class ApplicationService {
 
                 await qbDelete2.execute();
 
+                respon = "Ejecución de delete exitoso"
             }
 
             return {
