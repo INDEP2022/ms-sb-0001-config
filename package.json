@@ -41,7 +41,8 @@
     "rxjs": "^7.2.0",
     "swagger-ui-express": "^4.4.0",
     "typeorm": "0.3.11",
-    "winston": "^3.8.0"
+    "winston": "^3.8.0",
+    "sigebi-lib-common": "github:INDEP2022/sigebi-lib-common"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.3.0",

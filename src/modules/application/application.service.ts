@@ -162,7 +162,73 @@ export class ApplicationService {
      * @param {number} goodInNumber
      * @param {number} eventInId
      */
-    async paSeparaMotivos(goodInNumber: number, eventInId: number) {
+    async paSeparaMotivos(goodNumber: number, eventId: number) {
+        const val = 0
+        const chain = ''
+
+        let vResponsable = 'RESPONSABLES_ATENCION.RESPONSABLE_1';
+        let vMotivos = 'BIENES_ESTATUSREV.MOTIVOS'; 
+        let vEstatus = 'BIENES_ESTATUSREV.ESTATUS_INICIAL';
+        let vTipoBien = 'BIENES_ESTATUSREV.TIPO_BIEN';
+        let vIdEvento = 'BIENES_ESTATUSREV.ID_EVENTO';
+        let vDescripcionMotivo = 'CAT_MOTIVOSREV.DESCRIPCION_MOTIVO';
+        let vTamResp: number;
+        let vActMotivosRev: string;
+        let vSubindice: number = 0;
+        let vSubindice2: number = 0;    
+        let vValor: number; 
+        let vValResp: number;
+        let vPalabra: string; 
+        let vCadena: string; 
+        let vPalResp: string;
+               
+        const goodsRev = await this.Repository
+            .createQueryBuilder("sera.v_bienes_rev")
+            .select([
+              "v_bienes_rev.ESTATUS",
+              "v_bienes_rev.RESPONSABLE",
+              "v_bienes_rev.MOTIVOS",
+              "v_bienes_rev.TIPO_BIEN",
+              "v_bienes_rev.ID_EVENTO",
+              "LENGTH(v_bienes_rev.RESPONSABLE) TAM_RESP"
+            ])
+            .where("v_bienes_rev.NO_BIEN = :p_no_bien", { p_no_bien: goodNumber })
+            .andWhere("v_bienes_rev.ID_EVENTO = :p_id_evento", { p_id_evento: eventId })
+            .orderBy("TAM_RESP", "ASC")
+            .getRawMany();
+        
+            const query = this.Repository.createQueryBuilder("cat_motivos_rev")
+            .select("cat_motivos_rev.DESCRIPCION_MOTIVO")
+            .where("cat_motivos_rev.AREA_RESPONSABLE = :p_responsable", { p_responsable: 'P_RESPONSABLE' })
+            .andWhere("cat_motivos_rev.ESTATUS_INICIAL = :p_estatus", { p_estatus: 'P_ESTATUS' })
+            .andWhere("cat_motivos_rev.TIPO_BIEN = :p_tipo_bien", { p_tipo_bien: 'P_TIPO_BIEN' })
+            .getRawMany();
+        
+            const del = this.Repository
+            .createQueryBuilder()
+            .delete()
+            .from('sera.BIENES_MOTIVOSREV')
+            .where("NO_BIEN = :no_bien", { no_bien: 'P_NO_BIEN' })
+            .andWhere("ID_EVENTO = :id_evento", { id_evento: 'P_ID_EVENTO' })
+            .andWhere("ATENDIDO = :atendido", { atendido: 0 })
+            .execute();
+        
+        
+        for (const goodRev of goodsRev) {
+            for (let x = 1; x <= val; x++) {
+                const words = chain.split('/');
+                const word = words[x - 1];
+                if (word === vDescripcionMotivo) {
+                  // código a ejecutar si se cumple la condición
+                } else {
+                    
+                }
+              }
+        }
+
+        
+        
+        
         throw new Error("Function not implemented.");
     }
 }
