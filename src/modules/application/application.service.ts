@@ -5,6 +5,7 @@ import { CatReasonsrevEntity } from "../infrastructure/entities/cat-reasonsrev.e
 import { EatEventsEntity } from "../infrastructure/entities/eat-events.entity";
 import { GoodsStatusrevEntity } from "../infrastructure/entities/goods-statusrev.entity";
 import { ResponsibleAttentionEntity } from "../infrastructure/entities/responsible-attention.entity";
+import { VGoodsRevEntity } from "../infrastructure/views/v_goods_rev.entity";
 import { InsertReasonsRevDto } from "./dto/param.dto";
 
 
@@ -16,6 +17,7 @@ export class ApplicationService {
         @InjectRepository(CatReasonsrevEntity) private CatReasonsrevRepository: Repository<CatReasonsrevEntity>,
         @InjectRepository(ResponsibleAttentionEntity) private ResponsibleAttentionRepository: Repository<ResponsibleAttentionEntity>,
         @InjectRepository(GoodsStatusrevEntity) private GoodsStatusrevRepository: Repository<GoodsStatusrevEntity>,
+        @InjectRepository(VGoodsRevEntity) private VGoodsRevRepository: Repository<VGoodsRevEntity>,
 
     ) { }
     /**
@@ -172,74 +174,111 @@ export class ApplicationService {
      * @param {number} dto.eventInId
      */
     async paSeparaMotivos(goodNumber: number, eventId: number) {
-        
-            const val = 0
-            const chain = ''
-    
-            let vResponsable = 'RESPONSABLES_ATENCION.RESPONSABLE_1';
-            let vMotivos = 'BIENES_ESTATUSREV.MOTIVOS'; 
-            let vEstatus = 'BIENES_ESTATUSREV.ESTATUS_INICIAL';
-            let vTipoBien = 'BIENES_ESTATUSREV.TIPO_BIEN';
-            let vIdEvento = 'BIENES_ESTATUSREV.ID_EVENTO';
-            let vDescripcionMotivo = 'CAT_MOTIVOSREV.DESCRIPCION_MOTIVO';
-            let vTamResp: number;
-            let vActMotivosRev: string;
+        try {
             let vSubindice: number = 0;
-            let vSubindice2: number = 0;    
-            let vValor: number; 
-            let vValResp: number;
-            let vPalabra: string; 
-            let vCadena: string; 
-            let vPalResp: string;
+            let vSubindice2: number = 0;
                    
-            const goodsRev = await this.GoodsStatusrevRepository
-                .createQueryBuilder("sera.v_bienes_rev")
-                .select([
-                  "v_bienes_rev.ESTATUS",
-                  "v_bienes_rev.RESPONSABLE",
-                  "v_bienes_rev.MOTIVOS",
-                  "v_bienes_rev.TIPO_BIEN",
-                  "v_bienes_rev.ID_EVENTO",
-                  "LENGTH(v_bienes_rev.RESPONSABLE) TAM_RESP"
-                ])
-                .where("v_bienes_rev.NO_BIEN = :p_no_bien", { p_no_bien: goodNumber })
-                .andWhere("v_bienes_rev.ID_EVENTO = :p_id_evento", { p_id_evento: eventId })
-                .orderBy("TAM_RESP", "ASC")
-                .getRawMany();
             
-                const query = this.GoodsStatusrevRepository.createQueryBuilder("cat_motivos_rev")
-                .select("cat_motivos_rev.DESCRIPCION_MOTIVO")
-                .where("cat_motivos_rev.AREA_RESPONSABLE = :p_responsable", { p_responsable: 'P_RESPONSABLE' })
-                .andWhere("cat_motivos_rev.ESTATUS_INICIAL = :p_estatus", { p_estatus: 'P_ESTATUS' })
-                .andWhere("cat_motivos_rev.TIPO_BIEN = :p_tipo_bien", { p_tipo_bien: 'P_TIPO_BIEN' })
-                .getRawMany();
+        
+            const goodsRev = await this.VGoodsRevRepository.query(`SELECT ESTATUS, RESPONSABLE, MOTIVOS, TIPO_BIEN, ID_EVENTO, LENGTH(RESPONSABLE) TAM_RESP
+                FROM SERA.V_BIENES_REV 
+            ORDER BY TAM_RESP LIMIT 1;`)
+
+            const motivesRev = async (vResponsable, vEstatus, vTipoBien) => {
+                const res = await this.VGoodsRevRepository.query(`SELECT DESCRIPCION_MOTIVO
+                FROM SERA.CAT_MOTIVOSREV 
+               WHERE AREA_RESPONSABLE = '${vResponsable}'
+                 AND ESTATUS_INICIAL = '${vEstatus}' 
+                 AND TIPO_BIEN = '${vTipoBien}'; `)
             
-                const del = this.GoodsStatusrevRepository.createQueryBuilder()
-                .delete()
-                .from('sera.BIENES_MOTIVOSREV')
-                .where("NO_BIEN = :no_bien", { no_bien: 'P_NO_BIEN' })
-                .andWhere("ID_EVENTO = :id_evento", { id_evento: 'P_ID_EVENTO' })
-                .andWhere("ATENDIDO = :atendido", { atendido: 0 })
-                .execute();
+                return res
+            }
             
             
             for (const goodRev of goodsRev) {
-                for (let x = 1; x <= val; x++) {
-                    const words = chain.split('/');
-                    const word = words[x - 1];
-                    if (word === vDescripcionMotivo) {
-                      // código a ejecutar si se cumple la condición
-                    } else {
+                console.log(goodRev)
+            
+                const res = await motivesRev(goodRev.responsable, goodRev.estatus, goodRev.tipo_bien)
+                console.log(res)
+                for (const motiveRev in res) {
+                    const valor = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.FA_CUENTA_PALABRAS('${goodRev.motivos}','/')`)
+                
+                    for (let x = 0; x < (valor[0].fa_cuenta_palabras + 1); x++) {
+                        const word = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.GETWORD('${goodRev.motivos}','/',${x})`)
+                        if (word[0].getword == valor[0].descripcion_motivo) {
                         
+                            const valResponsable = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.FA_CUENTA_PALABRAS('${goodRev.responsable}','/')`)
+                        
+                        
+                            const fdeladmbien = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.FA_DELADMBIEN('${goodNumber}','/',${x})`)
+                            if ((valResponsable[0].fa_cuenta_palabras + 1) == 1) {
+                        
+                                vSubindice = vSubindice + 1
+                        
+
+                            
+                                if (vSubindice == 1) {
+                               
+                                
+                               
+                                    await this.VGoodsRevRepository.query(`INSERT INTO BIENES_MOTIVOSREV
+                                (NO_BIEN, ID_EVENTO, TIPO_BIEN, ESTATUS, RESPONSABLE, DELEGACION, MOTIVO1, FEC_ESTATUS)
+                            VALUES
+                                (${goodNumber}, ${eventId}, ${goodRev.tipo_bien}, ${goodRev.estatus},${goodRev.responsable}, ${fdeladmbien[0].fa_deladmbien}, ${word[0].getword}, SYSDATE);`)
+                            
+                                } else if (vSubindice > 1) {
+                               
+                                    await this.VGoodsRevRepository.query(`UPDATE SERA.BIENES_MOTIVOSREV 
+                                SET MOTIVO${vSubindice} = ${word[0].getword} 
+                              WHERE NO_BIEN = ${goodNumber}
+                                AND RESPONSABLE = '${goodRev.responsable}'`)
+
+                                }
+                            } else if ((valResponsable[0].fa_cuenta_palabras + 1) > 1) {
+                                for (let z = 0; z < (valResponsable[0].fa_cuenta_palabras + 1); z++) {
+                                    const wordResponsable = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.GETWORD('${goodRev.responsable}','/',${z})`)
+                                    if (vSubindice2 == 1) {
+                                    
+                                    
+                               
+                                        await this.VGoodsRevRepository.query(`INSERT INTO BIENES_MOTIVOSREV
+                                (NO_BIEN, ID_EVENTO, TIPO_BIEN, ESTATUS, RESPONSABLE, DELEGACION, MOTIVO1, FEC_ESTATUS)
+                                    VALUES
+                                        (${goodNumber}, ${eventId}, ${goodRev.tipo_bien}, ${goodRev.estatus},${wordResponsable[0].getword}, ${fdeladmbien[0].fa_deladmbien}, ${word[0].getword}, SYSDATE);`)
+                                    
+                                    } else {
+                                        await this.VGoodsRevRepository.query(`UPDATE SERA.BIENES_MOTIVOSREV 
+                                        SET MOTIVO${vSubindice2} = ${word[0].getword} 
+                                    WHERE NO_BIEN = ${goodNumber}
+                                        AND RESPONSABLE = '${wordResponsable[0].getword}'`)
+                                    }
+
+                                }
+                            
+                            }
+                        }
+                    
                     }
-                  }
+                
+                }
+                vSubindice = 0;
             }
     
             
             
             
-            throw new Error("Function not implemented.");
+            return {
+                data: [],
+                statusCode: HttpStatus.OK,
+                message: 'Ejecucion exitosa'
+            };
+        }catch (e) {
+            return {
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: e,
+            };
         }
+        
         
     }
 }
