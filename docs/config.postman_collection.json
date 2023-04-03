@@ -1,0 +1,42 @@
+{
+	"info": {
+		"_postman_id": "8fe176c0-042f-4c9a-a0b3-3c9d196271bb",
+		"name": "config",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "2818429"
+	},
+	"item": [
+		{
+			"name": "post",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"goodNumber\":\"1\",\r\n    \"eventId\":\"\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/v1/config/apps/separaMotivos",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"v1",
+						"config",
+						"apps",
+						"separaMotivos"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
