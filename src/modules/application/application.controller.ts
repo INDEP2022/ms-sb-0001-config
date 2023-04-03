@@ -6,7 +6,7 @@ import { Paginate, PaginateQuery } from 'nestjs-paginate';
 import { Body, Post, Query } from "@nestjs/common/decorators";
 import { ApplicationService } from "./application.service";
 import { ResponseDataDTO } from "src/shared/dto/response.data.dto";
-import { InsertReasonsRevDto } from "./dto/param.dto";
+import { InsertReasonsRevDto, InsertSeparateMotivesDto } from "./dto/param.dto";
 
 @ApiTags('config applications ')
 @Controller('config/apps')
