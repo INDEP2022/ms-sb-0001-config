@@ -6,7 +6,7 @@ import { EatEventsEntity } from "../infrastructure/entities/eat-events.entity";
 import { GoodsStatusrevEntity } from "../infrastructure/entities/goods-statusrev.entity";
 import { ResponsibleAttentionEntity } from "../infrastructure/entities/responsible-attention.entity";
 import { VGoodsRevEntity } from "../infrastructure/views/v_goods_rev.entity";
-import { InsertReasonsRevDto } from "./dto/param.dto";
+import { InsertReasonsRevDto, InsertSeparateMotivesDto } from "./dto/param.dto";
 
 
 @Injectable()
@@ -173,7 +173,7 @@ export class ApplicationService {
      * @param {number} dto.goodInNumber
      * @param {number} dto.eventInId
      */
-    async paSeparaMotivos(goodNumber: number, eventId: number) {
+    async paSeparaMotivos(dto: InsertSeparateMotivesDto) {
         try {
             let vSubindice: number = 0;
             let vSubindice2: number = 0;
@@ -210,7 +210,7 @@ export class ApplicationService {
                             const valResponsable = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.FA_CUENTA_PALABRAS('${goodRev.responsable}','/')`)
                         
                         
-                            const fdeladmbien = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.FA_DELADMBIEN('${goodNumber}','/',${x})`)
+                            const fdeladmbien = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.FA_DELADMBIEN('${dto.goodNumber}','/',${x})`)
                             if ((valResponsable[0].fa_cuenta_palabras + 1) == 1) {
                         
                                 vSubindice = vSubindice + 1
@@ -224,13 +224,13 @@ export class ApplicationService {
                                     await this.VGoodsRevRepository.query(`INSERT INTO BIENES_MOTIVOSREV
                                 (NO_BIEN, ID_EVENTO, TIPO_BIEN, ESTATUS, RESPONSABLE, DELEGACION, MOTIVO1, FEC_ESTATUS)
                             VALUES
-                                (${goodNumber}, ${eventId}, ${goodRev.tipo_bien}, ${goodRev.estatus},${goodRev.responsable}, ${fdeladmbien[0].fa_deladmbien}, ${word[0].getword}, SYSDATE);`)
+                                (${dto.goodNumber}, ${dto.eventId}, ${goodRev.tipo_bien}, ${goodRev.estatus},${goodRev.responsable}, ${fdeladmbien[0].fa_deladmbien}, ${word[0].getword}, SYSDATE);`)
                             
                                 } else if (vSubindice > 1) {
                                
                                     await this.VGoodsRevRepository.query(`UPDATE SERA.BIENES_MOTIVOSREV 
                                 SET MOTIVO${vSubindice} = ${word[0].getword} 
-                              WHERE NO_BIEN = ${goodNumber}
+                              WHERE NO_BIEN = ${dto.goodNumber}
                                 AND RESPONSABLE = '${goodRev.responsable}'`)
 
                                 }
@@ -244,12 +244,12 @@ export class ApplicationService {
                                         await this.VGoodsRevRepository.query(`INSERT INTO BIENES_MOTIVOSREV
                                 (NO_BIEN, ID_EVENTO, TIPO_BIEN, ESTATUS, RESPONSABLE, DELEGACION, MOTIVO1, FEC_ESTATUS)
                                     VALUES
-                                        (${goodNumber}, ${eventId}, ${goodRev.tipo_bien}, ${goodRev.estatus},${wordResponsable[0].getword}, ${fdeladmbien[0].fa_deladmbien}, ${word[0].getword}, SYSDATE);`)
+                                        (${dto.goodNumber}, ${dto.eventId}, ${goodRev.tipo_bien}, ${goodRev.estatus},${wordResponsable[0].getword}, ${fdeladmbien[0].fa_deladmbien}, ${word[0].getword}, SYSDATE);`)
                                     
                                     } else {
                                         await this.VGoodsRevRepository.query(`UPDATE SERA.BIENES_MOTIVOSREV 
                                         SET MOTIVO${vSubindice2} = ${word[0].getword} 
-                                    WHERE NO_BIEN = ${goodNumber}
+                                    WHERE NO_BIEN = ${dto.goodNumber}
                                         AND RESPONSABLE = '${wordResponsable[0].getword}'`)
                                     }
 

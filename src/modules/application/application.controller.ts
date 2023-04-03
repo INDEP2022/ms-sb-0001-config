@@ -24,13 +24,13 @@ export class ApplicationController {
         return this.service.insertReasonsRev(dto);
     }
 
-    @ApiOperation({ summary: 'Procedure SP_INSERTA_MOTIVOSREV' })
+    @ApiOperation({ summary: 'Procedure SP_SEPARA_MOTIVOS' })
     @ApiResponse({
         status: 200,
         type: ResponseDataDTO,
     })
     @Post("/separaMotivos")
-    async paSeparaMotivos(@Body() goodNumber: number, eventId: number) {
-        return this.service.paSeparaMotivos(goodNumber, eventId);
+    async paSeparaMotivos(@Body() dto: InsertSeparateMotivesDto) {
+        return this.service.paSeparaMotivos(dto);
     }
 }
