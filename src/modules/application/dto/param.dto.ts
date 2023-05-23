@@ -5,24 +5,24 @@ import { Message } from "src/shared/utils/message.decorator";
 
 export class InsertReasonsRevDto {
 
-    @Type(() => Number)
-    @IsNumber({}, { message: Message.NUMBER('$property') })
-    goodInNumber: number;
+  @Type(() => Number)
+  @IsNumber({}, { message: Message.NUMBER('$property') })
+  goodInNumber: number;
 
-    @Type(() => Number)
-    @IsNumber({}, { message: Message.NUMBER('$property') })
-    eventInId: number;
+  @Type(() => Number)
+  @IsNumber({}, { message: Message.NUMBER('$property') })
+  eventInId: number;
 
-    @Type(() => String)
+  @Type(() => String)
   @IsString({ message: Message.STRING('$property') })
-    reasonsIn: string;
+  reasonsIn: string;
 
-    @Type(() => Number)
-    @IsNumber({}, { message: Message.NUMBER('$property') })
-    reasonsInNumber: string;
+  @Type(() => Number)
+  @IsNumber({}, { message: Message.NUMBER('$property') })
+  reasonsInNumber: string;
 
-    @Type(() => String)
+  @Type(() => String)
   @IsString({ message: Message.STRING('$property') })
-    actionIn: string;
+  actionIn: string;
 
 }
