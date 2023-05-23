@@ -6,7 +6,7 @@ import { Paginate, PaginateQuery } from 'nestjs-paginate';
 import { Body, Post, Query } from "@nestjs/common/decorators";
 import { ApplicationService } from "./application.service";
 import { ResponseDataDTO } from "src/shared/dto/response.data.dto";
-import { InsertReasonsRevDto } from "./dto/param.dto";
+import { InsertReasonsRevDto, InsertSeparateMotivesDto } from "./dto/param.dto";
 
 @ApiTags('config applications ')
 @Controller('config/apps')
@@ -22,5 +22,15 @@ export class ApplicationController {
     @Post("/insertReasonsRev")
     async insertReasonsRev(@Body() dto: InsertReasonsRevDto) {
         return this.service.insertReasonsRev(dto);
+    }
+
+    @ApiOperation({ summary: 'Procedure SP_SEPARA_MOTIVOS' })
+    @ApiResponse({
+        status: 200,
+        type: ResponseDataDTO,
+    })
+    @Post("/separaMotivos")
+    async paSeparaMotivos(@Body() dto: InsertSeparateMotivesDto) {
+        return this.service.paSeparaMotivos(dto);
     }
 }

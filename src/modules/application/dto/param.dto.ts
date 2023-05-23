@@ -26,3 +26,15 @@ export class InsertReasonsRevDto {
   actionIn: string;
 
 }
+
+export class InsertSeparateMotivesDto {
+
+    @Type(() => Number)
+    @IsNumber({}, { message: "debe ser numerico" })
+    goodNumber: number;
+
+    @Type(() => Number)
+    @IsNumber({}, { message: "debe ser numerico" })
+    eventId: number;
+
+}

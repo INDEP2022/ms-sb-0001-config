@@ -4,12 +4,13 @@ import { CatReasonsrevEntity } from "../infrastructure/entities/cat-reasonsrev.e
 import { EatEventsEntity } from "../infrastructure/entities/eat-events.entity";
 import { GoodsStatusrevEntity } from "../infrastructure/entities/goods-statusrev.entity";
 import { ResponsibleAttentionEntity } from "../infrastructure/entities/responsible-attention.entity";
+import { VGoodsRevEntity } from "../infrastructure/views/v_goods_rev.entity";
 import { ApplicationController } from './application.controller';
 import { ApplicationService } from './application.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CatReasonsrevEntity, EatEventsEntity, GoodsStatusrevEntity, ResponsibleAttentionEntity]),
+    TypeOrmModule.forFeature([CatReasonsrevEntity, EatEventsEntity, GoodsStatusrevEntity, ResponsibleAttentionEntity, VGoodsRevEntity]),
   ],
   controllers: [ApplicationController],
   providers: [ApplicationService]
