@@ -30,128 +30,116 @@ export class ApplicationService {
      * @returns {Promise<any>}
     */
     async insertReasonsRev(dto: InsertReasonsRevDto): Promise<any> {
-        let vQuery: any, //V_QUERY
-            vQuery2: any, //V_QUERY2
-            vQuery3: any, //V_QUERY3
-            direc: string, //DIREC
-            responsable: string = 'RESPONSABLE_', //RESPONSABLE
-            contador: number = 0, //CONTADOR
-            areaResp: string, //AREA_RESP
-            respon: string, //RESPON
-            existe: boolean, //EXISTE
-            columnas: string, //COLUMNAS
-            valores: string, //VALORES
-            motCount: number = 0, //MOT_COUNT
-            estatusIni: string = 'AVA', //ESTATUS_INI
-            noBienRe: number; //NO_BIEN_RE
-
         try {
-            const qb = this.EatEventsRepository.createQueryBuilder('sera.comer_eventos')
-                .select('sera.comer_eventos.direccion')
-                .where('sera.comer_eventos.id_evento = :id_evento', { id_evento: dto.eventInId });
+            let vQuery: any, //V_QUERY
+                vQuery2: any, //V_QUERY2
+                vQuery3: any, //V_QUERY3
+                address: string, //DIREC
+                responsible: string = 'RESPONSABLE_', //RESPONSABLE
+                counter: number = 0, //CONTADOR
+                areaResp: string, //AREA_RESP
+                respon: string, //RESPON
+                exists: boolean, //EXISTE
+                columns: string, //COLUMNAS
+                values: string, //VALORES
+                motCount: number = 0, //MOT_COUNT
+                statusIni: string = 'AVA', //ESTATUS_INI
+                goodNumberRe: number; //NO_BIEN_RE
 
-            direc = await qb.execute().then((data) => { return data[0].direccion });
+            const qb = this.EatEventsRepository.createQueryBuilder()
+                .select('address')
+                .where('eventId = :id_evento', { id_evento: dto.eventInId });
+            address = await qb.getRawOne();
 
-            if (dto.actionIn == "I") {
-                const qbSelectNoBienRe = this.GoodsStatusrevRepository.createQueryBuilder('sera.bienes_estatusrev')
-                    .select('sera.bienes_estatusrev.no_bien')
-                    .where('sera.bienes_estatusrev.no_bien = :no_bien', { no_bien: dto.goodInNumber })
-                    .andWhere('sera.bienes_estatusrev.id_evento = :id_evento', { id_evento: dto.eventInId })
-                    .andWhere('sera.bienes_estatusrev.estatus_inicial = :estatus_inicial', { estatus_inicial: estatusIni })
-                    .andWhere('sera.bienes_estatusrev.tipo_bien = :tipo_bien', { tipo_bien: direc });
+            if (dto.actionIn === "I") {
+                const qbSelectNoBienRe = this.GoodsStatusrevRepository.createQueryBuilder()
+                    .select('goodNumber')
+                    .where('goodNumber = :no_bien', { no_bien: dto.goodInNumber })
+                    .andWhere('eventId = :id_evento', { id_evento: dto.eventInId })
+                    .andWhere('statusInitial = :estatus_inicial', { estatus_inicial: statusIni })
+                    .andWhere('goodType = :tipo_bien', { tipo_bien: address });
 
-                // excute query
-                noBienRe = await qbSelectNoBienRe.execute().then((data) => { return data });
+                // Execute query
+                const result = await qbSelectNoBienRe.getRawOne();
+                goodNumberRe = result ? result.goodNumber : null;
 
-                if (noBienRe == null) {
-                    const qbInsertNoBienRe = this.GoodsStatusrevRepository.createQueryBuilder('sera.bienes_estatusrev')
+                if (!goodNumberRe) {
+                    const qbInsertNoBienRe = this.GoodsStatusrevRepository.createQueryBuilder('be')
                         .insert()
-                        .into('sera.bienes_estatusrev')
+                        .into('be')
                         .values([
-                            { no_bien: dto.goodInNumber, tipo_bien: direc, id_evento: dto.eventInId, estatus_inicial: estatusIni, motivos: dto.reasonsIn }
+                            { no_bien: dto.goodInNumber, tipo_bien: address, id_evento: dto.eventInId, estatus_inicial: statusIni, motivos: dto.reasonsIn }
                         ]);
 
-                    // excute query
-                    try {
-                        await qbInsertNoBienRe.execute();
-                    } catch (error) {
-                        throw new HttpException(error, HttpStatus.NOT_IMPLEMENTED);
-                    }
+                    // Execute query
+                    await qbInsertNoBienRe.execute();
                 }
 
-                const qbSelectvQuery2 = this.CatReasonsrevRepository.createQueryBuilder('sera.cat_motivosrev')
-                    .select('sera.cat_motivosrev.area_responsable')
-                    .where('sera.cat_motivosrev.id_motivo IN (:id_motivo)', { id_motivo: dto.reasonsInNumber });
+                const qbSelectvQuery2 = this.CatReasonsrevRepository.createQueryBuilder()
+                    .select('areaResponsible')
+                    .where('reasonId IN (:id_motivo)', { id_motivo: dto.reasonsInNumber });
 
                 vQuery2 = await qbSelectvQuery2.getCount();
-                // OPEN salida FOR vQuery2 ;
-                for (let index = 0; index < vQuery2; index++) {
-                    motCount++;
-                }
+                motCount = vQuery2;
 
-                const qbSelectvQuery = this.CatReasonsrevRepository.createQueryBuilder('sera.cat_motivosrev')
-                    .select('sera.cat_motivosrev.area_responsable')
-                    .where('sera.cat_motivosrev.id_motivo IN (:id_motivo)', { id_motivo: dto.reasonsInNumber })
-                    .orderBy('sera.cat_motivosrev.area_responsable', 'ASC');
+                const qbSelectvQuery = this.CatReasonsrevRepository.createQueryBuilder()
+                    .select('areaResponsible')
+                    .where('reasonId IN (:id_motivo)', { id_motivo: dto.reasonsInNumber })
+                    .orderBy('areaResponsible', 'ASC');
 
                 vQuery = await qbSelectvQuery.execute();
 
-                let vQueryCount = await qbSelectvQuery.getCount();
-                // OPEN salida FOR vQuery;
-                for (let index = 0; index < vQueryCount; index++) {
-                    contador++;
-                    areaResp = vQuery[index].area_responsable;
-                    const qsSelectExiste = this.ResponsibleAttentionRepository.createQueryBuilder('sera.responsables_atencion')
-                        .select('sera.responsables_atencion.no_bien')
-                        .where('sera.responsables_atencion.no_bien = :no_bien', { no_bien: dto.goodInNumber })
-                        .andWhere('sera.responsables_atencion.estatus_inicial = :estatus_inicial', { estatus_inicial: estatusIni });
+                for (let index = 0; index < vQuery.length; index++) {
+                    counter++;
+                    areaResp = vQuery[ index ].area_responsable;
+                    const qsSelectExiste = this.ResponsibleAttentionRepository.createQueryBuilder()
+                        .select('goodNumber')
+                        .where('goodNumber = :no_bien', { no_bien: dto.goodInNumber })
+                        .andWhere('statusInitial = :estatus_inicial', { estatus_inicial: statusIni });
 
-                    // excute query
-                    existe = await qsSelectExiste.getExists();
+                    // Execute query
+                    exists = await qsSelectExiste.getExists();
 
-                    if (existe) {
-
-                        if (contador <= motCount) {
-                            columnas = ", ";
-                            valores = ",' ";
+                    if (exists) {
+                        if (counter <= motCount) {
+                            columns = ", ";
+                            values = ",' ";
                         }
-                        columnas = columnas + responsable + contador;
-                        valores = valores + areaResp;
+                        columns = columns + responsible + counter;
+                        values = values + areaResp;
                     }
                 }
 
-                if (columnas != null && valores != null) {
-                    vQuery3 = `INSERT INTO SERA.RESPONSABLES_ATENCION (NO_BIEN, ID_EVENTO, ESTATUS_INICIAL${columnas})
-                    VALUES( '${dto.goodInNumber}', '${dto.eventInId}', '${estatusIni}' ${valores}')`;
-                    // excute query
+                if (columns && values) {
+                    vQuery3 = `INSERT INTO SERA.RESPONSABLES_ATENCION (NO_BIEN, ID_EVENTO, ESTATUS_INICIAL${columns})
+                    VALUES( '${dto.goodInNumber}', '${dto.eventInId}', '${statusIni}' ${values}')`;
+                    // Execute query
                     await this.ResponsibleAttentionRepository.query(vQuery3)
 
                     respon = "Ejecución de insert exitoso";
-                    // PA_SEPARA_MOTIVOS
-                    //TODO: descomentar este await cuando este listo paSeparaMotivos
-                    //await this.paSeparaMotivos(dto.goodInNumber, dto.eventInId);
+                    // TODO: descomentar este await cuando esté listo paSeparaMotivos
+                    // await this.paSeparaMotivos(dto.goodInNumber, dto.eventInId);
                 }
-            } else if (dto.actionIn == "D") {
-                const qbDelete1 = this.GoodsStatusrevRepository.createQueryBuilder('sera.bienes_estatusrev')
+            } else if (dto.actionIn === "D") {
+                const qbDelete1 = this.GoodsStatusrevRepository.createQueryBuilder()
                     .delete()
-                    .where('sera.bienes_estatusrev.no_bien = :no_bien', { no_bien: dto.goodInNumber })
-                    .andWhere('sera.bienes_estatusrev.tipo_bien = :tipo_bien', { tipo_bien: direc })
-                    .andWhere('sera.bienes_estatusrev.estatus_inicial = :estatus_inicial', { estatus_inicial: estatusIni })
-                    .andWhere('sera.bienes_estatusrev.id_evento = :id_evento', { id_evento: dto.eventInId });
+                    .where('goodNumber = :no_bien', { no_bien: dto.goodInNumber })
+                    .andWhere('goodType = :tipo_bien', { tipo_bien: address })
+                    .andWhere('statusInitial = :estatus_inicial', { estatus_inicial: statusIni })
+                    .andWhere('eventId = :id_evento', { id_evento: dto.eventInId });
 
                 await qbDelete1.execute();
 
-                const qbDelete2 = this.ResponsibleAttentionRepository.createQueryBuilder('sera.responsables_atencion')
+                const qbDelete2 = this.ResponsibleAttentionRepository.createQueryBuilder()
                     .delete()
-                    .where('sera.responsables_atencion.no_bien = :no_bien', { no_bien: dto.goodInNumber })
-                    .andWhere('sera.responsables_atencion.estatus_inicial = :estatus_inicial', { estatus_inicial: estatusIni })
-                    .andWhere('sera.responsables_atencion.id_evento = :id_evento', { id_evento: dto.eventInId });
+                    .where('goodNumber = :no_bien', { no_bien: dto.goodInNumber })
+                    .andWhere('statusInitial = :estatus_inicial', { estatus_inicial: statusIni })
+                    .andWhere('eventId = :id_evento', { id_evento: dto.eventInId });
 
                 await qbDelete2.execute();
 
                 respon = "Ejecución de delete exitoso"
             }
-
             return {
                 data: [respon],
                 statusCode: HttpStatus.OK,
@@ -160,7 +148,7 @@ export class ApplicationService {
         } catch (e) {
             return {
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-                message: e,
+                message: e.message,
             };
         }
     }
