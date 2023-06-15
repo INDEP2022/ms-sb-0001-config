@@ -20,7 +20,6 @@ RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-COPY .env ./
 
 RUN npm install glob rimraf
 
@@ -39,7 +38,6 @@ ENV NODE_ENV=${NODE_ENV}
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-COPY .env ./
 
 RUN npm install --only=production
 
