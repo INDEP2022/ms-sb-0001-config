@@ -9,6 +9,7 @@ import { GoodsStatusrevEntity } from "../infrastructure/entities/goods-statusrev
 import { ResponsibleAttentionEntity } from "../infrastructure/entities/responsible-attention.entity";
 import { InsertReasonsRevDto, ReasonsSeparateDto } from "./dto/param.dto";
 import { VGoodsRevEntity } from "../infrastructure/views/v_goods_rev.entity";
+import { CRUDMessages } from "src/shared/utils/message.enum";
 
 
 @Injectable()
@@ -57,7 +58,6 @@ export class ApplicationService {
             address = await qb.getRawOne();
 
             if (dto.actionIn === "I") {
-                //console.log("entraste aqui al dto.actionIn === I")
 
                 const qbSelectNoBienRe = this.GoodsStatusrevRepository.createQueryBuilder("bienes_estatusrev")
                     .select("bienes_estatusrev.no_bien")
@@ -70,7 +70,6 @@ export class ApplicationService {
                 const goodNumberRe = result ? result.no_bien : null;
 
                 if (!goodNumberRe) {
-                    //console.log("entraste aqui al !goodNumberRe")
 
                     const qbInsertNoBienRe = `INSERT INTO sera.bienes_estatusrev
                     (no_bien, tipo_bien, id_evento, estatus_inicial, motivos)
@@ -97,8 +96,6 @@ export class ApplicationService {
                 vQuery = await this.CatReasonsrevRepository.query(qsSelectvQuery, valuesvQuery);
 
                 for (let index = 0; index < vQuery.length; index++) {
-                    //console.log("entraste aqui al for")
-
                     counter++;
                     areaResp = vQuery[ index ].area_responsable;
 
@@ -115,12 +112,8 @@ export class ApplicationService {
                     ]);
 
                     if (results[ 0 ].exists) {
-                        //console.log("entraste aqui results")
-                        //console.log(counter)
-                        //console.log(motCount)
-                        if (counter <= motCount) {
-                            //console.log("entraste aqui //console")
 
+                        if (counter <= motCount) {
                             columns = ", ";
                             values = ",' ";
                         }
@@ -129,10 +122,8 @@ export class ApplicationService {
                     }
                 }
 
-                //console.log(columns)
-                //console.log(values)
                 if (columns && values && columns.length > 0 && values.length > 0) {
-                    //console.log("entraste aqui columns && values")
+
                     vQuery3 = `INSERT INTO SERA.RESPONSABLES_ATENCION (NO_BIEN, ID_EVENTO, ESTATUS_INICIAL${columns})
                     VALUES('${dto.goodInNumber}', '${dto.eventInId}', '${statusIni}' ${values}')`;
                     // Execute query
@@ -140,7 +131,7 @@ export class ApplicationService {
 
                     respon = respon + " Ejecución de insert RESPONSABLES_ATENCION exitoso";
                     const paSeparaMotivos = await this.reasonsSeparate({ goodNumber: dto.goodInNumber, eventId: dto.eventInId });
-                    //console.log(paSeparaMotivos)
+
                 }
             } else if (dto.actionIn === "D") {
                 const qbDelete1 = `DELETE FROM sera.bienes_estatusrev
@@ -172,7 +163,36 @@ export class ApplicationService {
             return {
                 data: [ respon ],
                 statusCode: HttpStatus.OK,
-                message: 'OK'
+                message: CRUDMessages.GetSuccess
+            };
+        } catch (e) {
+            return {
+                statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: e.message,
+            };
+        }
+    }
+    //#endregion
+
+    //#region PA_OBTIENE_MOTIVOS_CAN
+    /**
+     * PROCEDURE "SERA"."PA_OBTIENE_MOTIVOS_CAN"
+     *
+     * @param {number} eventId
+     */
+    async getReasonsCan(eventId: number) {
+        try {
+            const qsQuery = `SELECT ID_MOTIVO, DESCRIPCION_MOTIVO
+                            FROM SERA.CAT_MOTIVOSREV
+                            WHERE TIPO_BIEN = (SELECT DIRECCION FROM SERA.COMER_EVENTOS WHERE ID_EVENTO = $1)
+                            AND ESTATUS_INICIAL = 'AVA';`;
+            const valuesQ = [eventId];
+            const result = await this.CatReasonsrevRepository.query(qsQuery, valuesQ);
+
+            return {
+                data: [result],
+                statusCode: HttpStatus.OK,
+                message: CRUDMessages.GetSuccess
             };
         } catch (e) {
             return {
@@ -220,66 +240,63 @@ export class ApplicationService {
                 WHERE NO_BIEN = $1
                     AND ID_EVENTO = $2
                     AND ATENDIDO = 0;`,
-                [ dto.goodNumber, dto.eventId ],
+                [dto.goodNumber, dto.eventId],
             );
 
-            // console.log("fuera del loop" + goodsRev)
             for (const goodRev of goodsRev) {
-                // console.log(goodRev)
-
                 const res = await motivesRev(goodRev.responsable, goodRev.estatus, goodRev.tipo_bien)
-                // console.log(res)
+
                 for (const motiveRev in res) {
                     const valor = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.FA_CUENTA_PALABRAS('${goodRev.motivos}','/')`)
-                    // console.log(valor)
-                    for (let x = 0; x < (valor[ 0 ].fa_cuenta_palabras + 1); x++) {
+
+                    for (let x = 0; x < (valor[0].fa_cuenta_palabras + 1); x++) {
                         const word = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.GETWORD('${goodRev.motivos}','/',${x})`)
-                        // console.log(word)
-                        if (word[ 0 ].getword == valor[ 0 ].descripcion_motivo) {
+
+                        if (word[0].getword == valor[0].descripcion_motivo) {
 
                             const valResponsable = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.FA_CUENTA_PALABRAS('${goodRev.responsable}','/')`)
                             const fdeladmbien = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.FA_DELADMBIEN('${dto.goodNumber}','/',${x})`)
-                            if ((valResponsable[ 0 ].fa_cuenta_palabras + 1) == 1) {
+                            if ((valResponsable[0].fa_cuenta_palabras + 1) == 1) {
                                 vSubindice = vSubindice + 1
                                 if (vSubindice == 1) {
                                     await this.VGoodsRevRepository.query(`INSERT INTO SERA.BIENES_MOTIVOSREV
                                     (NO_BIEN, ID_EVENTO, TIPO_BIEN, ESTATUS, RESPONSABLE, DELEGACION, MOTIVO1, FEC_ESTATUS)
                                     VALUES
-                                    (${dto.goodNumber}, ${dto.eventId}, ${goodRev.tipo_bien}, ${goodRev.estatus},${goodRev.responsable}, ${fdeladmbien[ 0 ].fa_deladmbien}, ${word[ 0 ].getword}, '${LocalDate.getNow()}');`)
+                                    (${dto.goodNumber}, ${dto.eventId}, ${goodRev.tipo_bien}, ${goodRev.estatus},${goodRev.responsable}, ${fdeladmbien[0].fa_deladmbien}, ${word[0].getword}, '${LocalDate.getNow()}');`)
                                 } else if (vSubindice > 1) {
                                     await this.VGoodsRevRepository.query(`UPDATE SERA.BIENES_MOTIVOSREV
-                                    SET MOTIVO${vSubindice} = ${word[ 0 ].getword}
+                                    SET MOTIVO${vSubindice} = ${word[0].getword}
                                     WHERE NO_BIEN = ${dto.goodNumber}
                                     AND RESPONSABLE = '${goodRev.responsable}'`)
                                 }
-                            } else if ((valResponsable[ 0 ].fa_cuenta_palabras + 1) > 1) {
-                                for (let z = 0; z < (valResponsable[ 0 ].fa_cuenta_palabras + 1); z++) {
+                            } else if ((valResponsable[0].fa_cuenta_palabras + 1) > 1) {
+                                for (let z = 0; z < (valResponsable[0].fa_cuenta_palabras + 1); z++) {
                                     const wordResponsable = await this.VGoodsRevRepository.query(`SELECT * FROM SERA.GETWORD('${goodRev.responsable}','/',${z})`)
                                     if (vSubindice2 == 1) {
                                         await this.VGoodsRevRepository.query(`INSERT INTO SERA.BIENES_MOTIVOSREV
                                         (NO_BIEN, ID_EVENTO, TIPO_BIEN, ESTATUS, RESPONSABLE, DELEGACION, MOTIVO1, FEC_ESTATUS)
                                         VALUES
-                                        (${dto.goodNumber}, ${dto.eventId}, ${goodRev.tipo_bien}, ${goodRev.estatus},${wordResponsable[ 0 ].getword}, ${fdeladmbien[ 0 ].fa_deladmbien}, ${word[ 0 ].getword}, '${LocalDate.getNow()}');`)
+                                        (${dto.goodNumber}, ${dto.eventId}, ${goodRev.tipo_bien}, ${goodRev.estatus},${wordResponsable[0].getword}, ${fdeladmbien[0].fa_deladmbien}, ${word[0].getword}, '${LocalDate.getNow()}');`)
 
                                     } else {
                                         await this.VGoodsRevRepository.query(`UPDATE SERA.BIENES_MOTIVOSREV
-                                        SET MOTIVO${vSubindice2} = ${word[ 0 ].getword}
+                                        SET MOTIVO${vSubindice2} = ${word[0].getword}
                                         WHERE NO_BIEN = ${dto.goodNumber}
-                                        AND RESPONSABLE = '${wordResponsable[ 0 ].getword}'`)
+                                        AND RESPONSABLE = '${wordResponsable[0].getword}'`)
                                     }
                                 }
                             }
                         }
                     }
                 }
-                // console.log(vSubindice)
+
                 vSubindice = 0;
             }
 
             return {
                 data: [],
                 statusCode: HttpStatus.OK,
-                message: 'Ejecucion exitosa'
+                message: CRUDMessages.GetSuccess
             };
         } catch (e) {
             return {
