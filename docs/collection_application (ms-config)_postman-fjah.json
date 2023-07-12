@@ -1,0 +1,38 @@
+{
+    "info": {
+        "name": "application (ms-config)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "description": ""
+    },
+    "item": [
+        {
+            "name": "insertReasonsRev / SP_INSERTA_MOTIVOSREV",
+            "request": {
+                "method": "POST",
+                "url": {
+                    "raw": "localhost:3000/api/v1/config/apps/insertReasonsRev",
+                    "path": [
+                        "api",
+                        "v1",
+                        "config",
+                        "apps",
+                        "insertReasonsRev"
+                    ],
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "3000"
+                },
+                "body": {
+                    "mode": "raw",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    },
+                    "raw": "{\n  \"goodInNumber\": 3804,\n  \"eventInId\": 3804,\n  \"reasonsIn\": \"DATOS DE COPROPIEDAD\",\n  \"reasonsInNumber\": 11,\n  \"actionIn\": \"D\"\n}"
+                }
+            }
+        }
+    ]
+}
